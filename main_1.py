@@ -2,6 +2,7 @@ import pygame
 import sys
 
 from random import randrange
+from tools import *
 
 
 ORANGE = (200, 140, 40)
@@ -182,12 +183,19 @@ class Panel:
 icon_width = 400
 area_between_icons = 60
 
-r, g, b = randrange(100, 170), randrange(100, 170), randrange(100, 170)
-b1_surf = pygame.Surface((icon_width, icon_width))
-b1_surf.fill((r, g, b))
 
-b1_surf_pressed = pygame.Surface((icon_width, icon_width))
-b1_surf_pressed.fill((r + 15, g + 15, b + 15))
+def create_lent_button_images(logo_path):
+    b_surf = pygame.image.load(logo_path).convert()
+    frame_color = get_frame_color(b_surf)
+    pygame.draw.rect(b_surf, frame_color, (0, 0, 400, 400), 5)
+    b_surf_pressed = b_surf.copy()
+
+    average_c = sum(frame_color) // 3
+    dark_surf = pygame.Surface((400, 400))
+    dark_surf.set_alpha(average_c // 10)
+    b_surf.blit(dark_surf, (0, 0))
+
+    return b_surf, b_surf_pressed
 
 
 r, g, b = randrange(100, 170), randrange(100, 170), randrange(100, 170)
@@ -216,8 +224,8 @@ del r, g, b
 
 button_lents = [
     (
-        Button(b1_surf, b1_surf_pressed, (area_between_icons, 60)),
-        Lent("data/lent.png"),
+        Button(*create_lent_button_images("data/industry_logo.png"), (area_between_icons, 60)),
+        Lent("data/lent2.png"),
     ),
     (
         Button(b2_surf, b2_surf_pressed, (area_between_icons * 2 + icon_width, 60)),
@@ -225,7 +233,7 @@ button_lents = [
     ),
     (
         Button(b3_surf, b3_surf_pressed, (area_between_icons * 3 + icon_width * 2, 60)),
-        Lent("data/lent2.png"),
+        Lent("data/lent.png"),
     ),
     (
         Button(b4_surf, b4_surf_pressed, (area_between_icons * 4 + icon_width * 3, 60)),
@@ -233,9 +241,7 @@ button_lents = [
     ),
 ]
 
-button_exit = TextButton(
-    "exit", (screen.get_width() // 2, screen.get_height() - 300), True
-)
+button_exit = TextButton("exit", (10, screen.get_height() - 30))
 
 menu_sign = pygame.Surface((panel_width, 100))
 menu_sign.fill((20, 20, 20))
@@ -307,13 +313,17 @@ speed = 100
 
 panel = Panel()
 
+pygame.mouse.set_visible(False)
+
+def draw_mouse(mx, my):
+    pygame.draw.circle(screen, (0, 0, 240), (mx, my), 20)
+    pygame.draw.circle(screen, (240, 240, 0), (mx, my), 20, 3)
+
 
 def lent_menu(lent):
     auto_scroll = 0
     auto_scroll_speed = 1
     background_image.set_alpha(50)
-    mouse_counter = 0
-    mouse_limit = FPS * 1.5  # time after which the mouse won't be visible(1.5 seconds)
 
     is_drag = False
     scroll = 0
@@ -327,14 +337,6 @@ def lent_menu(lent):
         flag = False
 
         mx, my = pygame.mouse.get_pos()
-        if (mx, my) != prev_mouse_pos:
-            mouse_counter = 0
-            pygame.mouse.set_visible(True)
-        else:
-            mouse_counter += 1
-            if mouse_counter > mouse_limit:
-                pygame.mouse.set_visible(False)
-                mouse_counter = mouse_limit
 
         if is_drag:
             y_movement = prev_mouse_pos[1] - my
@@ -388,6 +390,8 @@ def lent_menu(lent):
         if button_close_lent.triggered():
             break
 
+        draw_mouse(mx, my)
+
         pygame.display.update()
         clock.tick(FPS)
 
@@ -429,6 +433,8 @@ def main_menu():
 
         if button_exit.triggered():
             break
+
+        draw_mouse(mx, my)
 
         pygame.display.update()
         clock.tick(FPS)
