@@ -24,14 +24,17 @@ screen = pygame.display.set_mode(
 clock = pygame.time.Clock()
 FPS = 80
 
-bottom_offset = 100
-panel_width = 300
+bottom_offset = 80
+panel_width = 250
 
 font = pygame.font.Font(None, 36)
 font_small = pygame.font.Font(None, 24)
 font_big = pygame.font.Font(None, 48)
 
 background_image = pygame.image.load("data/bg.png").convert()
+background_image.set_alpha(100)
+module_net = pygame.image.load("data/module_net.png").convert()
+module_net.set_alpha(170)
 
 scr_w, scr_h = screen.get_size()
 bg_w, bg_h = background_image.get_size()
@@ -180,18 +183,20 @@ class Panel:
         self.is_opened = False
 
 
-icon_width = 400
-area_between_icons = 60
+icon_width = 282
+area_between_icons = 32
+left_offset = 191
+top_offset = 95
 
 
 def create_lent_button_images(logo_path):
     b_surf = pygame.image.load(logo_path).convert()
     frame_color = get_frame_color(b_surf)
-    pygame.draw.rect(b_surf, frame_color, (0, 0, 400, 400), 5)
+    pygame.draw.rect(b_surf, frame_color, (0, 0, icon_width, icon_width), 5)
     b_surf_pressed = b_surf.copy()
 
     average_c = sum(frame_color) // 3
-    dark_surf = pygame.Surface((400, 400))
+    dark_surf = pygame.Surface((icon_width, icon_width))
     dark_surf.set_alpha(average_c // 10)
     b_surf.blit(dark_surf, (0, 0))
 
@@ -224,29 +229,29 @@ del r, g, b
 
 button_lents = [
     (
-        Button(*create_lent_button_images("data/industry_logo.png"), (area_between_icons, 60)),
+        Button(*create_lent_button_images("data/industry_logo.png"), (area_between_icons * 0 + left_offset, top_offset)),
         Lent("data/lent2.png"),
     ),
     (
-        Button(b2_surf, b2_surf_pressed, (area_between_icons * 2 + icon_width, 60)),
+        Button(b2_surf, b2_surf_pressed, (area_between_icons * 1 + icon_width + left_offset, top_offset)),
         Lent("data/lent1.png"),
     ),
     (
-        Button(b3_surf, b3_surf_pressed, (area_between_icons * 3 + icon_width * 2, 60)),
+        Button(b3_surf, b3_surf_pressed, (area_between_icons * 2 + icon_width * 2 + left_offset, top_offset)),
         Lent("data/lent.png"),
     ),
     (
-        Button(b4_surf, b4_surf_pressed, (area_between_icons * 4 + icon_width * 3, 60)),
+        Button(b4_surf, b4_surf_pressed, (area_between_icons * 3 + icon_width * 3 + left_offset, top_offset)),
         Lent("data/lent2.png"),
     ),
 ]
 
 button_exit = TextButton("exit", (10, screen.get_height() - 30))
 
-menu_sign = pygame.Surface((panel_width, 100))
+menu_sign = pygame.Surface((panel_width, bottom_offset))
 menu_sign.fill((20, 20, 20))
 
-menu_sign_pressed = pygame.Surface((panel_width, 100))
+menu_sign_pressed = pygame.Surface((panel_width, bottom_offset))
 menu_sign_pressed.fill((30, 30, 30))
 
 three_line_menu_offset = 25
@@ -274,12 +279,12 @@ for surf in (menu_sign, menu_sign_pressed):
         5,
     )
 
-button_open_panel = Button(menu_sign, menu_sign_pressed, (0, HEIGHT - 100))
+button_open_panel = Button(menu_sign, menu_sign_pressed, (0, HEIGHT - bottom_offset))
 
-back_sign = pygame.Surface((panel_width, 100))
+back_sign = pygame.Surface((panel_width, bottom_offset))
 back_sign.fill((20, 20, 20))
 
-back_sign_pressed = pygame.Surface((panel_width, 100))
+back_sign_pressed = pygame.Surface((panel_width, bottom_offset))
 back_sign_pressed.fill((30, 30, 30))
 
 for surf in (back_sign, back_sign_pressed):
@@ -305,7 +310,7 @@ for surf in (back_sign, back_sign_pressed):
         6
     )
 
-button_close_lent = Button(back_sign, back_sign_pressed, (WIDTH - panel_width, HEIGHT - 100))
+button_close_lent = Button(back_sign, back_sign_pressed, (WIDTH - panel_width, HEIGHT - bottom_offset))
 
 author_label = font_small.render("Made by Anchous Production", True, WHITE)
 
@@ -397,7 +402,6 @@ def lent_menu(lent):
 
 
 def main_menu():
-    background_image.set_alpha(100)
     while True:
         screen.fill((0, 0, 0))
 
@@ -408,6 +412,7 @@ def main_menu():
                 screen.get_height() // 2 - background_image.get_height() // 2,
             ),
         )
+        screen.blit(module_net, (0, 0))
 
         screen.blit(author_label, (screen.get_width() - 260, screen.get_height() - 30))
 
