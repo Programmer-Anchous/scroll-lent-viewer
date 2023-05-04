@@ -225,11 +225,11 @@ button_lents = [
     ),
     (
         Button(b3_surf, b3_surf_pressed, (area_between_icons * 3 + icon_width * 2, 60)),
-        Lent("data/lent2.bmp"),
+        Lent("data/lent2.png"),
     ),
     (
         Button(b4_surf, b4_surf_pressed, (area_between_icons * 4 + icon_width * 3, 60)),
-        Lent("data/lent2.bmp"),
+        Lent("data/lent2.png"),
     ),
 ]
 
