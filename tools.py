@@ -29,3 +29,6 @@ def negative_color(color):
 
 def get_frame_color(img):
     return negative_color(average_color(img))
+
+def load_image(file_path):
+    return image.load(file_path).convert()

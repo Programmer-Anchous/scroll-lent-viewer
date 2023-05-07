@@ -1,6 +1,9 @@
 import pygame
 import sys
 
+from random import randrange
+from tools import *
+
 
 ORANGE = (200, 140, 40)
 WHITE = (200,) * 3
@@ -9,6 +12,7 @@ MEDIUM_GREY = (100,) * 3
 LIGHT_GREY = (160,) * 3
 BLACK = (15,) * 3
 
+W_SIZE = WIDTH, HEIGHT = (1920, 1080)
 
 pygame.init()
 
@@ -20,11 +24,17 @@ screen = pygame.display.set_mode(
 clock = pygame.time.Clock()
 FPS = 80
 
+bottom_offset = 80
+panel_width = 250
 
 font = pygame.font.Font(None, 36)
 font_small = pygame.font.Font(None, 24)
+font_big = pygame.font.Font(None, 48)
 
-background_image = pygame.image.load("data/bg.png").convert()
+background_image = load_image("data/bg.png")
+background_image.set_alpha(100)
+module_net = load_image("data/module_net.png")
+module_net.set_alpha(170)
 
 scr_w, scr_h = screen.get_size()
 bg_w, bg_h = background_image.get_size()
@@ -45,7 +55,7 @@ if scr_h > bg_h:
     )
 
 
-def sign(num):
+def sign(num: int | float):
     if num < 0:
         return -1
     if num == 0:
@@ -54,7 +64,7 @@ def sign(num):
 
 
 class Button:
-    def __init__(self, image, image_pressed, coords, center=False):
+    def __init__(self, image: pygame.Surface, image_pressed: pygame.Surface, coords: tuple | list, center: bool=False):
         self.image = image
         self.image_pressed = image_pressed
         if center:
@@ -64,7 +74,7 @@ class Button:
 
         self.clicked = False
 
-    def update(self, mouse_pos, click):
+    def update(self, mouse_pos: tuple, click: bool):
         self.clicked = False
         if self.rect.collidepoint(mouse_pos):
             current_image = self.image_pressed
@@ -79,194 +89,197 @@ class Button:
 
 
 class TextButton(Button):
-    def __init__(self, text, coords, center=False):
-        image = font.render(text, True, LIGHT_GREY)
-        image_pressed = font.render(text, True, WHITE)
+    def __init__(self, text: str, coords: tuple | list, center: bool=False, font_: pygame.font.Font=font):
+        image = font_.render(text, True, LIGHT_GREY)
+        image_pressed = font_.render(text, True, WHITE)
         super().__init__(image, image_pressed, coords, center)
 
 
 class Lent:
-    def __init__(self, filename: str):
-        self.image = pygame.image.load(filename).convert()
+    def __init__(self, image: pygame.Surface):
+        self.image = image
         self.image_width = self.image.get_width()
         self.image_height = self.image.get_height()
 
-        # coeff = 1080 / self.image_width
-        # self.image = pygame.transform.scale(self.image, (self.image_width * coeff, self.image_height * coeff))
-        # self.image_width = self.image.get_width()
-        # self.image_height = self.image.get_height()
-
-        self.coord_x = 100
         self.scroll = 0
-        self.offset = 0
 
         self.is_start = True
         self.is_end = False
 
-    def update(self, movement):
-        screen_h = screen.get_height()
-
+    def update(self, movement: int):
+        if self.is_start:
+            if movement > 0:
+                self.is_start = False
+        
+        elif self.is_end:
+            if movement < 0:
+                self.is_end = False
+                
         if not (self.is_start or self.is_end):
             self.scroll += movement
             if self.scroll < 0:
                 self.scroll = 0
                 self.is_start = True
-            elif self.scroll > (self.image_height - screen_h):
-                self.scroll = self.image_height - screen_h
+            elif self.scroll > (self.image_height - HEIGHT + bottom_offset):
+                self.scroll = self.image_height - HEIGHT + bottom_offset
                 self.is_end = True
-
-        elif self.is_start:
-            self.coord_x -= movement
-
-            if self.coord_x > self.offset:
-                self.coord_x = self.offset
-
-            elif self.coord_x < 0:
-                self.coord_x = 0
-                self.is_start = False
-
-        elif self.is_end:
-            self.coord_x -= movement
-
-            if self.coord_x < -self.offset:
-                self.coord_x = -self.offset
-
-            elif self.coord_x > 0:
-                self.coord_x = 0
-                self.is_end = False
-
-        cropped = self.image.subsurface((0, self.scroll, self.image_width, screen_h))
-        screen.blit(
-            cropped, (screen.get_width() // 2 - cropped.get_width() // 2, self.coord_x)
-        )
-
-
-class Pannel:
-    def __init__(self):
-        self.width = 200
-        self.image = pygame.Surface((self.width, screen.get_height()))
-        self.image.fill(GREY)
-        pygame.draw.line(
-            self.image,
-            MEDIUM_GREY,
-            (self.image.get_width() - 1, 0),
-            (self.image.get_width() - 1, self.image.get_height()),
-            3,
-        )
-        pygame.draw.line(
-            self.image,
-            MEDIUM_GREY,
-            (self.image.get_width() - 40, 0),
-            (self.image.get_width() - 40, self.image.get_height()),
-            2,
-        )
-        self.image.set_alpha(220)
-
-        arrow = pygame.image.load("data/arrow.png").convert()
-        arrow_pressed = pygame.image.load("data/arrow_pressed.png").convert()
-
-        surf = pygame.Surface((40, screen.get_height()))
-        surf.fill((255, 255, 255))
-        surf.set_colorkey((255, 255, 255))
-        surf_pressed = surf.copy()
-
-        surf.blit(
-            arrow,
-            (
-                surf.get_width() // 2 - arrow.get_width() // 2,
-                surf.get_height() // 2 - arrow.get_height() // 2,
-            ),
-        )
-
-        surf_pressed.blit(
-            arrow_pressed,
-            (
-                surf_pressed.get_width() // 2 - arrow_pressed.get_width() // 2,
-                surf_pressed.get_height() // 2 - arrow_pressed.get_height() // 2,
-            ),
-        )
-        self.open_button = Button(surf, surf_pressed, (0, 0))
-        self.close_button = Button(
-            pygame.transform.flip(surf, True, False),
-            pygame.transform.flip(surf_pressed, True, False),
-            (160, 0),
-        )
-
-        self.opened_rect = self.image.get_rect(topleft=(0, 0))
-
-        self.auto_scroll_button = TextButton("auto", (80, screen.get_height() // 2 - 50), True)
-
-        self.button_exit = TextButton("back", (80, screen.get_height() - 40), True)
-
-        self.is_opened = False
-        self.close = False
-
-    def update(self, mouse_pos, click):
-        if not pygame.mouse.get_visible() or (mouse_pos[0] > 400 and not self.is_opened):
-            return
         
-        self.close = False
+        cropped = self.image.subsurface(
+            (0, self.scroll, self.image_width, HEIGHT - bottom_offset)
+        )
+        
+        screen.blit(
+            cropped, (screen.get_width() // 2 - cropped.get_width() // 2, 0)
+        )
+
+    def set_scroll(self, scroll_num: int, is_start: bool, is_end: bool):
+        self.scroll = scroll_num
+        self.is_start = is_start
+        self.is_end = is_end
+
+
+class Panel:
+    def __init__(self):
+        self.width = panel_width
+        self.surf = pygame.Surface((self.width, HEIGHT - bottom_offset))
+        self.surf.set_alpha(200)
+        self.is_opened = False
+
+        self.auto_scroll_button = TextButton(
+            "auto", (panel_width // 2, screen.get_height() // 2 - 50), True, font_big
+        )
+        self.button_exit = TextButton(
+            "back", (panel_width // 2, screen.get_height() - 40), True, font_big
+        )
+
+    def update(self, mouse_pos: tuple | list, click: bool):
         if self.is_opened:
-            screen.blit(self.image, (0, 0))
-            self.close_button.update(mouse_pos, click)
-            self.button_exit.update(mouse_pos, click)
+            screen.blit(self.surf, (0, 0))
             self.auto_scroll_button.update(mouse_pos, click)
-        else:
-            screen.blit(self.image, (-160, 0))
-            self.open_button.update(mouse_pos, click)
+            # self.button_exit.update(mouse_pos, click)
 
-        if self.close_button.triggered():
-            self.close_button.update(mouse_pos, click)
-            self.is_opened = False
+    def is_mouse_in_panel(self, mouse_pos: tuple):
+        return mouse_pos[0] < self.width
 
-        if self.open_button.triggered():
-            self.open_button.update(mouse_pos, click)
-            self.is_opened = True
+    def open(self):
+        self.is_opened = True
 
-        if self.button_exit.triggered():
-            self.close = True
-
-    def is_closing(self):
-        close = self.close
-        self.close = False
-        return close
-    
-    def is_mouse_in_pannel(self, mx, my):
-        return (pannel.is_opened and pannel.opened_rect.collidepoint(mx, my) or pannel.close_button.triggered() or pannel.open_button.triggered())
+    def close(self):
+        self.is_opened = False
 
 
-button_lents = [
-    (
-        TextButton("lent 1", (screen.get_width() // 2 - 60, screen.get_height() - 600)),
-        Lent("data/lent.png"),
-    ),
-    (
-        TextButton("lent 2", (screen.get_width() // 2 - 60, screen.get_height() - 550)),
-        Lent("data/lent1.png"),
-    ),
-    (
-        TextButton("lent 3", (screen.get_width() // 2 - 60, screen.get_height() - 500)),
-        Lent("data/lent2.bmp"),
-    ),
-]
+icon_width = 282
+area_between_icons_x = 32
+area_between_icons_y = 50
+left_offset = 191
+top_offset = 95
 
-button_exit = TextButton(
-    "exit", (screen.get_width() // 2, screen.get_height() - 300), True
-)
+buttons_and_lents = list()
+
+
+def create_lent_button_images(button_surf: pygame.Surface) -> tuple:
+    frame_color = get_frame_color(button_surf)
+    pygame.draw.rect(button_surf, frame_color, (0, 0, icon_width, icon_width), 5)
+    button_surf_pressed = button_surf.copy()
+
+    average_c = sum(frame_color) // 3
+    dark_surf = pygame.Surface((icon_width, icon_width))
+    dark_surf.set_alpha(average_c // 10)
+    button_surf.blit(dark_surf, (0, 0))
+
+    return button_surf, button_surf_pressed
+
+
+for i in range(3):
+    lent_image = load_image(f"data/lents/lent_{i + 1}/lent.png")
+    logo_image = load_image(f"data/lents/lent_{i + 1}/logo.png")
+    lent = Lent(lent_image)
+    button = Button(*create_lent_button_images(logo_image), ((area_between_icons_x + icon_width) * i + left_offset, top_offset))
+    buttons_and_lents.append((lent, button))
+
+button_exit = TextButton(" ", (WIDTH - 28, 10))
+
+menu_sign = pygame.Surface((panel_width, bottom_offset))
+menu_sign.fill((20, 20, 20))
+
+menu_sign_pressed = pygame.Surface((panel_width, bottom_offset))
+menu_sign_pressed.fill((30, 30, 30))
+
+three_line_menu_offset = 20
+three_line_menu_width = 45
+for surf in (menu_sign, menu_sign_pressed):
+    pygame.draw.line(
+        surf,
+        LIGHT_GREY,
+        (panel_width // 2 - three_line_menu_width, bottom_offset // 2 - three_line_menu_offset),
+        (panel_width // 2 + three_line_menu_width, bottom_offset // 2 - three_line_menu_offset),
+        5,
+    )
+    pygame.draw.line(
+        surf,
+        LIGHT_GREY,
+        (panel_width // 2 - three_line_menu_width, bottom_offset // 2),
+        (panel_width // 2 + three_line_menu_width, bottom_offset // 2),
+        5,
+    )
+    pygame.draw.line(
+        surf,
+        LIGHT_GREY,
+        (panel_width // 2 - three_line_menu_width, bottom_offset // 2 + three_line_menu_offset),
+        (panel_width // 2 + three_line_menu_width, bottom_offset // 2 + three_line_menu_offset),
+        5,
+    )
+
+button_open_panel = Button(menu_sign, menu_sign_pressed, (0, HEIGHT - bottom_offset))
+
+back_sign = pygame.Surface((panel_width, bottom_offset))
+back_sign.fill((20, 20, 20))
+
+back_sign_pressed = pygame.Surface((panel_width, bottom_offset))
+back_sign_pressed.fill((30, 30, 30))
+
+for surf in (back_sign, back_sign_pressed):
+    pygame.draw.line(
+        surf,
+        LIGHT_GREY,
+        (panel_width // 2 - three_line_menu_width, bottom_offset // 2),
+        (panel_width // 2 + three_line_menu_width, bottom_offset // 2),
+        5
+    )
+    pygame.draw.line(
+        surf,
+        LIGHT_GREY,
+        (panel_width // 2 - three_line_menu_width, bottom_offset // 2),
+        (panel_width // 2, bottom_offset // 2 - 25),
+        6
+    )
+    pygame.draw.line(
+        surf,
+        LIGHT_GREY,
+        (panel_width // 2 - three_line_menu_width, bottom_offset // 2),
+        (panel_width // 2, bottom_offset // 2 + 25),
+        6
+    )
+
+button_close_lent = Button(back_sign, back_sign_pressed, (WIDTH - panel_width, HEIGHT - bottom_offset))
 
 author_label = font_small.render("Made by Anchous Production", True, WHITE)
 
 speed = 100
 
-pannel = Pannel()
+panel = Panel()
+
+pygame.mouse.set_visible(False)
+
+def draw_mouse(mouse_pos: tuple | list):
+    pygame.draw.circle(screen, (0, 0, 240), mouse_pos, 20)
+    pygame.draw.circle(screen, (240, 240, 0), mouse_pos, 20, 3)
 
 
-def lent_menu(lent):
+def lent_menu(lent: Lent):
     auto_scroll = 0
     auto_scroll_speed = 1
     background_image.set_alpha(50)
-    mouse_counter = 0
-    mouse_limit = FPS * 1.5  # time after which the mouse won't be visible(1.5 seconds)
 
     is_drag = False
     scroll = 0
@@ -277,24 +290,15 @@ def lent_menu(lent):
 
         # decrease the scroll value by 1 toward zero
         scroll = (abs(scroll) - 1) * sign(scroll)
-        flag = False
 
-        mx, my = pygame.mouse.get_pos()
-        if (mx, my) != prev_mouse_pos:
-            mouse_counter = 0
-            pygame.mouse.set_visible(True)
-        else:
-            mouse_counter += 1
-            if mouse_counter > mouse_limit:
-                pygame.mouse.set_visible(False)
-                mouse_counter = mouse_limit
-        
+        mouse_pos = mx, my = pygame.mouse.get_pos()
+
         if is_drag:
             y_movement = prev_mouse_pos[1] - my
             if y_movement != 0:
                 scroll = y_movement
 
-        prev_mouse_pos = mx, my
+        prev_mouse_pos = mouse_pos
 
         clicked = False
         for event in pygame.event.get():
@@ -305,36 +309,46 @@ def lent_menu(lent):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     clicked = True
-                    flag = True
                 if event.button == 4:
                     scroll = -speed
                 if event.button == 5:
                     scroll = speed
-            
+
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     is_drag = False
 
-        if pannel.auto_scroll_button.triggered():
-            auto_scroll = auto_scroll_speed - auto_scroll
-            flag = False
-
-        if pannel.is_closing():
-            break
-        
         lent.update(scroll + auto_scroll)
-        pannel.update((mx, my), clicked)
+        button_open_panel.update(mouse_pos, clicked)
+        panel.update(mouse_pos, clicked)
 
-        if flag and clicked and not pannel.is_mouse_in_pannel(mx, my):
-            is_drag = True
-            auto_scroll = 0
+        # check if cursor on bottom panel
+        if my < (HEIGHT - bottom_offset):
+            if panel.auto_scroll_button.triggered():
+                auto_scroll = auto_scroll_speed - auto_scroll
+
+            if (
+                clicked
+                and not (panel.is_mouse_in_panel(mouse_pos) and panel.is_opened)
+            ):
+                is_drag = True
+                auto_scroll = 0
+        else:
+            if button_open_panel.triggered():
+                panel.is_opened = not panel.is_opened
+        
+        # check if closing lent
+        button_close_lent.update(mouse_pos, clicked)
+        if button_close_lent.triggered():
+            break
+
+        draw_mouse(mouse_pos)
 
         pygame.display.update()
         clock.tick(FPS)
 
 
 def main_menu():
-    background_image.set_alpha(100)
     while True:
         screen.fill((0, 0, 0))
 
@@ -345,10 +359,11 @@ def main_menu():
                 screen.get_height() // 2 - background_image.get_height() // 2,
             ),
         )
+        # screen.blit(module_net, (0, 0))
 
         screen.blit(author_label, (screen.get_width() - 260, screen.get_height() - 30))
 
-        mx, my = pygame.mouse.get_pos()
+        mouse_pos = mx, my = pygame.mouse.get_pos()
 
         clicked = False
         for event in pygame.event.get():
@@ -360,23 +375,18 @@ def main_menu():
                 if event.button == 1:
                     clicked = True
 
-        for button, lent in button_lents:
-            button.update((mx, my), clicked)
-            pygame.draw.line(
-                screen,
-                LIGHT_GREY,
-                (screen.get_width() // 2 - 200, button.rect.y + 30),
-                (screen.get_width() // 2 + 200, button.rect.y + 30),
-                1,
-            )
+        for lent, button in buttons_and_lents:
+            button.update(mouse_pos, clicked)
             if button.triggered():
                 lent_menu(lent)
                 background_image.set_alpha(100)
 
-        button_exit.update((mx, my), clicked)
+        button_exit.update(mouse_pos, clicked)
 
         if button_exit.triggered():
             break
+
+        draw_mouse(mouse_pos)
 
         pygame.display.update()
         clock.tick(FPS)
