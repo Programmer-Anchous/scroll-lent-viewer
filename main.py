@@ -32,15 +32,15 @@ font = pygame.font.Font(None, 36)
 font_small = pygame.font.Font(None, 24)
 font_big = pygame.font.Font(None, 48)
 
-background_image = load_image("data/bg.png")
-background_image.set_alpha(100)
+background_image = load_image("data/wallpaper.jpg")
+background_image.set_alpha(200)
 module_net = load_image("data/module_net.png")
 module_net.set_alpha(170)
 
 scr_w, scr_h = screen.get_size()
 bg_w, bg_h = background_image.get_size()
 
-if scr_w > bg_w:
+if scr_w != bg_w:
     scale_coeff_x = scr_w / bg_w
 
     background_image = pygame.transform.scale(
@@ -137,6 +137,10 @@ class Lent:
         self.is_start = True
         self.is_end = False
 
+        self.end_scroll_value = self.image_height - HEIGHT + bottom_offset
+
+        self.links = list()
+
     def update(self, movement: int):
         if self.is_start:
             if movement > 0:
@@ -151,8 +155,8 @@ class Lent:
             if self.scroll < 0:
                 self.scroll = 0
                 self.is_start = True
-            elif self.scroll > (self.image_height - HEIGHT + bottom_offset):
-                self.scroll = self.image_height - HEIGHT + bottom_offset
+            elif self.scroll > self.end_scroll_value:
+                self.scroll = self.end_scroll_value
                 self.is_end = True
 
         cropped = self.image.subsurface(
@@ -165,6 +169,11 @@ class Lent:
         self.scroll = scroll_num
         self.is_start = is_start
         self.is_end = is_end
+    
+    def add_links(self, *links):
+        for i, link in enumerate(links):
+            button = TextButton(link[0], (40, i * 50 + 200))
+            self.links.append((button, link[1]))
 
 
 class Panel:
@@ -232,8 +241,6 @@ area_between_icons_y = 50
 left_offset = 191
 top_offset = 95
 
-buttons_and_lents = list()
-
 
 def create_lent_button_images(button_surf: pygame.Surface) -> tuple:
     frame_color = get_frame_color(button_surf)
@@ -248,6 +255,7 @@ def create_lent_button_images(button_surf: pygame.Surface) -> tuple:
     return button_surf, button_surf_pressed
 
 
+buttons_and_lents = list()
 directories = [path for path in Path("data/lents").iterdir() if path.is_dir()]
 for i in range(len(directories)):
     try:
@@ -263,6 +271,8 @@ for i in range(len(directories)):
         ((area_between_icons_x + icon_width) * i + left_offset, top_offset),
     )
     buttons_and_lents.append((lent, button))
+
+buttons_and_lents[0][0].add_links(("Начало", 0), ("Заводы", 7237))
 
 button_exit = TextButton(" ", (WIDTH - 28, 10))
 
@@ -341,13 +351,6 @@ speed = 100
 
 panel = Panel()
 
-pygame.mouse.set_visible(False)
-
-
-def draw_mouse(mouse_pos: tuple | list):
-    pygame.draw.circle(screen, (0, 0, 240), mouse_pos, 20)
-    pygame.draw.circle(screen, (240, 240, 0), mouse_pos, 20, 3)
-
 
 def lent_menu(lent: Lent):
     auto_scroll = 0
@@ -382,14 +385,14 @@ def lent_menu(lent: Lent):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     clicked = True
-                if event.button == 4:
-                    scroll = -speed
-                if event.button == 5:
-                    scroll = speed
 
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     is_drag = False
+            
+            # if event.type == pygame.KEYDOWN:
+            #     if event.key == pygame.K_1:
+            #         print(lent.scroll)
 
         lent.update(scroll + auto_scroll)
         button_open_panel.update(mouse_pos, clicked)
@@ -399,7 +402,7 @@ def lent_menu(lent: Lent):
         if my < (HEIGHT - bottom_offset):
             if panel.auto_scroll_button.triggered():
                 auto_scroll = auto_scroll_speed - auto_scroll
-
+            
             if clicked and not (panel.is_mouse_in_panel(mouse_pos) and panel.is_opened):
                 is_drag = True
                 auto_scroll = 0
@@ -411,8 +414,14 @@ def lent_menu(lent: Lent):
         button_close_lent.update(mouse_pos, clicked)
         if button_close_lent.triggered():
             break
-
-        draw_mouse(mouse_pos)
+        if panel.is_opened:
+            for link_button, scroll_num in lent.links:
+                link_button.update(mouse_pos, clicked)
+                if link_button.triggered():
+                    is_start = scroll_num == 0
+                    is_end = scroll_num > lent.end_scroll_value
+                    lent.set_scroll(scroll_num, is_start, is_end)
+                    scroll = 0
 
         pygame.display.update()
         clock.tick(FPS)
@@ -424,10 +433,11 @@ def main_menu():
 
         screen.blit(
             background_image,
-            (
-                screen.get_width() // 2 - background_image.get_width() // 2,
-                screen.get_height() // 2 - background_image.get_height() // 2,
-            ),
+            (0, 0)
+            # (
+            #     screen.get_width() // 2 - background_image.get_width() // 2,
+            #     screen.get_height() // 2 - background_image.get_height() // 2,
+            # ),
         )
         # screen.blit(module_net, (0, 0))
 
@@ -453,8 +463,6 @@ def main_menu():
 
         if button_exit.triggered():
             break
-
-        draw_mouse(mouse_pos)
 
         pygame.display.update()
         clock.tick(FPS)
