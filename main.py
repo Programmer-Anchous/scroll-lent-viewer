@@ -21,6 +21,9 @@ infoObject = pygame.display.Info()
 screen = pygame.display.set_mode(
     (infoObject.current_w, infoObject.current_h), pygame.FULLSCREEN
 )
+display = pygame.Surface(W_SIZE)
+screen_offset_x = screen.get_width() // 2 - WIDTH // 2
+screen_offset_y = screen.get_height() // 2 - HEIGHT // 2
 
 clock = pygame.time.Clock()
 FPS = 80
@@ -39,7 +42,7 @@ background_image = load_image("data/wallpaper.jpg")
 module_net = load_image("data/module_net.png")
 module_net.set_alpha(170)
 
-scr_w, scr_h = screen.get_size()
+scr_w, scr_h = display.get_size()
 bg_w, bg_h = background_image.get_size()
 
 if scr_w != bg_w:
@@ -60,7 +63,7 @@ if scr_h > bg_h:
 
 icon_width = 282
 area_between_icons_x = 32
-area_between_icons_y = 50
+area_between_icons_y = 32
 left_offset = 191
 top_offset = 95
 
@@ -88,7 +91,7 @@ class Label:
             self.rect = self.image.get_rect(topleft=coords)
 
     def update(self):
-        screen.blit(self.image, self.rect)
+        display.blit(self.image, self.rect)
 
 
 class Button:
@@ -116,7 +119,7 @@ class Button:
                 self.clicked = True
         else:
             current_image = self.image
-        screen.blit(current_image, self.rect)
+        display.blit(current_image, self.rect)
 
     def triggered(self) -> bool:
         return self.clicked
@@ -194,7 +197,7 @@ class Lent:
             (0, self.scroll, self.image_width, HEIGHT - bottom_offset)
         )
 
-        screen.blit(cropped, (screen.get_width() // 2 - cropped.get_width() // 2, 0))
+        display.blit(cropped, (display.get_width() // 2 - cropped.get_width() // 2, 0))
 
     def set_scroll(self, scroll_num: int):
         self.scroll = scroll_num
@@ -206,6 +209,9 @@ class Lent:
             self.scroll = self.end_scroll_value
             self.is_start = False
             self.is_end = True
+        else:
+            self.is_start = False
+            self.is_end = False
     
     def add_links(self, *links):
         for i, link in enumerate(links):
@@ -265,7 +271,7 @@ class Panel:
 
     def update(self, mouse_pos: tuple | list, click: bool):
         if self.is_opened:
-            screen.blit(self.surf, (0, 0))
+            display.blit(self.surf, (0, 0))
             self.auto_scroll_button.update(mouse_pos, click)
 
     def is_mouse_in_panel(self, mouse_pos: tuple):
@@ -301,8 +307,13 @@ for i in range(len(directories)):
     buttons_and_lents.append((lent, button))
 
 # some settings
-buttons_and_lents[0][0].add_links(("Начало", 0), ("Заводы", 7217), ("Инвестиции", 11689))
-buttons_and_lents[1][1].set_pos(3, 0)
+buttons_and_lents[1][1].set_pos(0, buttons_and_lents[0][1].rect.height + area_between_icons_y)
+buttons_and_lents[2][1].set_pos(2, 0)
+buttons_and_lents[3][1].set_pos(4, 0)
+
+buttons_and_lents[1][0].add_links(("Начало", 0), ("Заводы", 7217), ("Инвестиции", 11689))
+buttons_and_lents[0][0].add_links(("Данные", 2610), ("История", 3838), ("Особенности", 8215))
+
 
 button_exit = TextButton(" ", (WIDTH - 28, 10))
 
@@ -385,14 +396,13 @@ panel = Panel()
 def lent_menu(lent: Lent):
     auto_scroll = 0
     auto_scroll_speed = 2
-    background_image.set_alpha(50)
 
     is_drag = False
     scroll = 0
 
     prev_mouse_pos = [0, 0]
     while True:
-        screen.fill(BLACK)
+        display.fill(BLACK)
 
         # decrease the scroll value by 1 toward zero
         scroll = (abs(scroll) - 1) * sign(scroll)
@@ -420,9 +430,9 @@ def lent_menu(lent: Lent):
                 if event.button == 1:
                     is_drag = False
             
-            # if event.type == pygame.KEYDOWN:
-            #     if event.key == pygame.K_1:
-            #         print(lent.scroll)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    print(lent.scroll)
 
         lent.update(scroll + auto_scroll)
         button_open_panel.update(mouse_pos, clicked)
@@ -447,6 +457,7 @@ def lent_menu(lent: Lent):
         # check if closing lent
         button_close_lent.update(mouse_pos, clicked)
         if button_close_lent.triggered():
+            lent.scroll = 0
             break
         if panel.is_opened:
             for link_button, scroll_num in lent.links:
@@ -457,15 +468,16 @@ def lent_menu(lent: Lent):
                     panel.is_opened = False
                     auto_scroll = 0
 
+        screen.blit(display, (screen_offset_x, screen_offset_y))
         pygame.display.update()
         clock.tick(FPS)
 
 
 def main_menu():
     while True:
-        screen.fill((0, 0, 0))
+        display.fill((0, 0, 0))
 
-        screen.blit(
+        display.blit(
             background_image,
             (0, 0)
             # (
@@ -491,13 +503,13 @@ def main_menu():
             button.update(mouse_pos, clicked)
             if button.triggered():
                 lent_menu(lent)
-                background_image.set_alpha(100)
 
         button_exit.update(mouse_pos, clicked)
 
         if button_exit.triggered():
             break
 
+        screen.blit(display, (screen_offset_x, screen_offset_y))
         pygame.display.update()
         clock.tick(FPS)
 
