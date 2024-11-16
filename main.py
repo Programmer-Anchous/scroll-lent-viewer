@@ -123,9 +123,10 @@ class Button:
 
     def triggered(self) -> bool:
         return self.clicked
-    
+
     def set_pos(self, x, y):
-        self.rect.topleft = ((area_between_icons_x + icon_width) * x + left_offset, y + top_offset)
+        self.rect.topleft = ((area_between_icons_x + icon_width)
+                             * x + left_offset, y + top_offset)
 
 
 class TextButton(Button):
@@ -192,12 +193,13 @@ class Lent:
                 elif self.scroll > self.end_scroll_value:
                     self.scroll = self.end_scroll_value
                     self.is_end = True
-        
+
         cropped = self.image.subsurface(
             (0, self.scroll, self.image_width, HEIGHT - bottom_offset)
         )
 
-        display.blit(cropped, (display.get_width() // 2 - cropped.get_width() // 2, 0))
+        display.blit(cropped, (display.get_width() //
+                     2 - cropped.get_width() // 2, 0))
 
     def set_scroll(self, scroll_num: int):
         self.scroll = scroll_num
@@ -212,12 +214,12 @@ class Lent:
         else:
             self.is_start = False
             self.is_end = False
-    
+
     def add_links(self, *links):
         for i, link in enumerate(links):
             button = TextButton(link[0], (30, i * 60 + 160))
             self.links.append((button, link[1]))
-    
+
     def animation(self, end_scroll):
         if end_scroll != self.scroll:
             self.speed = (end_scroll - self.scroll) / 30
@@ -248,11 +250,13 @@ class Panel:
             ),
         )
         pygame.draw.rect(
-            auto_scroll_image, LIGHT_GREY, (0, 0, button_width, button_height), 4, 2
+            auto_scroll_image, LIGHT_GREY, (0, 0,
+                                            button_width, button_height), 4, 2
         )
         auto_scroll_image.set_colorkey((0, 0, 0))
-        
-        auto_scroll_image_pressed = pygame.Surface((button_width, button_height))
+
+        auto_scroll_image_pressed = pygame.Surface(
+            (button_width, button_height))
         auto_scroll_image_pressed.blit(
             light_label,
             (
@@ -261,12 +265,14 @@ class Panel:
             ),
         )
         pygame.draw.rect(
-            auto_scroll_image_pressed, WHITE, (0, 0, button_width, button_height), 4, 2
+            auto_scroll_image_pressed, WHITE, (0,
+                                               0, button_width, button_height), 4, 2
         )
         auto_scroll_image_pressed.set_colorkey((0, 0, 0))
 
         self.auto_scroll_button = Button(
-            auto_scroll_image, auto_scroll_image_pressed, (panel_width // 2 - 1, 80), True
+            auto_scroll_image, auto_scroll_image_pressed, (
+                panel_width // 2 - 1, 80), True
         )
 
     def update(self, mouse_pos: tuple | list, click: bool):
@@ -307,12 +313,15 @@ for i in range(len(directories)):
     buttons_and_lents.append((lent, button))
 
 # some settings
-buttons_and_lents[1][1].set_pos(0, buttons_and_lents[0][1].rect.height + area_between_icons_y)
+buttons_and_lents[1][1].set_pos(
+    0, buttons_and_lents[0][1].rect.height + area_between_icons_y)
 buttons_and_lents[2][1].set_pos(2, 0)
 buttons_and_lents[3][1].set_pos(4, 0)
 
-buttons_and_lents[1][0].add_links(("Начало", 0), ("Заводы", 7217), ("Инвестиции", 11689))
-buttons_and_lents[0][0].add_links(("Данные", 2610), ("История", 3838), ("Особенности", 8215))
+buttons_and_lents[1][0].add_links(
+    ("Начало", 0), ("Заводы", 7217), ("Инвестиции", 11689))
+buttons_and_lents[0][0].add_links(
+    ("Данные", 2610), ("История", 3838), ("Особенности", 8215))
 
 
 button_exit = TextButton(" ", (WIDTH - 28, 10))
@@ -361,7 +370,8 @@ for surf in (menu_sign, menu_sign_pressed):
         5,
     )
 
-button_open_panel = Button(menu_sign, menu_sign_pressed, (0, HEIGHT - bottom_offset))
+button_open_panel = Button(
+    menu_sign, menu_sign_pressed, (0, HEIGHT - bottom_offset))
 
 # creating back button sign
 back_sign_width = 30
@@ -377,12 +387,15 @@ for sign_surf in (back_sign, back_sign_pressed):
     thickness = 3
     surf = pygame.Surface((width, width))
     surf.set_colorkey((0, 0, 0))
-    pygame.draw.rect(surf, LIGHT_GREY, (width // 2 - thickness, 0, thickness * 2, width // 2 + thickness))
-    pygame.draw.rect(surf, LIGHT_GREY, (width // 2 - thickness, width // 2 - thickness, width // 2 + thickness, thickness * 2))
+    pygame.draw.rect(surf, LIGHT_GREY, (width // 2 - thickness,
+                     0, thickness * 2, width // 2 + thickness))
+    pygame.draw.rect(surf, LIGHT_GREY, (width // 2 - thickness,
+                     width // 2 - thickness, width // 2 + thickness, thickness * 2))
     surf = pygame.transform.rotate(surf, -45)
 
     hypot_offset = hypot(width, width) // 8
-    sign_surf.blit(surf, (panel_width // 2 - surf.get_width() // 2 - hypot_offset, bottom_offset // 2 - surf.get_height() // 2))
+    sign_surf.blit(surf, (panel_width // 2 - surf.get_width() //
+                   2 - hypot_offset, bottom_offset // 2 - surf.get_height() // 2))
 
 button_close_lent = Button(
     back_sign, back_sign_pressed, (WIDTH - panel_width, HEIGHT - bottom_offset)
@@ -429,7 +442,7 @@ def lent_menu(lent: Lent):
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     is_drag = False
-            
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1:
                     print(lent.scroll)
@@ -442,14 +455,14 @@ def lent_menu(lent: Lent):
         if my < (HEIGHT - bottom_offset):
             if panel.auto_scroll_button.triggered():
                 auto_scroll = auto_scroll_speed - auto_scroll
-            
+
             if clicked and not (panel.is_mouse_in_panel(mouse_pos) and panel.is_opened):
                 is_drag = True
                 auto_scroll = 0
         else:
             if button_open_panel.triggered():
                 panel.is_opened = not panel.is_opened
-        
+
         if auto_scroll:
             if lent.is_end:
                 auto_scroll = 0
