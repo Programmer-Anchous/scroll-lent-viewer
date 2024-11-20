@@ -111,9 +111,12 @@ class Button:
 
         self.clicked = False
 
-    def update(self, mouse_pos: tuple, click: bool):
+    def update(self, finger_pos: tuple, click: bool):
+        if not all(finger_pos):
+            return
+
         self.clicked = False
-        if self.rect.collidepoint(mouse_pos):
+        if self.rect.collidepoint(finger_pos):
             current_image = self.image_pressed
             if click:
                 self.clicked = True
@@ -443,10 +446,6 @@ def lent_menu(lent: Lent):
                 if event.button == 1:
                     is_drag = False
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
-                    print(lent.scroll)
-
         lent.update(scroll + auto_scroll)
         button_open_panel.update(mouse_pos, clicked)
         panel.update(mouse_pos, clicked)
@@ -493,14 +492,10 @@ def main_menu():
         display.blit(
             background_image,
             (0, 0)
-            # (
-            #     screen.get_width() // 2 - background_image.get_width() // 2,
-            #     screen.get_height() // 2 - background_image.get_height() // 2,
-            # ),
         )
         # screen.blit(module_net, (0, 0))
 
-        mouse_pos = mx, my = pygame.mouse.get_pos()
+        finger_pos = (None, None)
 
         clicked = False
         for event in pygame.event.get():
@@ -508,16 +503,16 @@ def main_menu():
                 pygame.quit()
                 sys.exit()
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    clicked = True
+            if event.type == pygame.FINGERDOWN:
+                finger_pos = (event.x, event.y)
+                clicked = True
 
         for lent, button in buttons_and_lents:
-            button.update(mouse_pos, clicked)
+            button.update(finger_pos, clicked)
             if button.triggered():
                 lent_menu(lent)
 
-        button_exit.update(mouse_pos, clicked)
+        button_exit.update(finger_pos, clicked)
 
         if button_exit.triggered():
             break
