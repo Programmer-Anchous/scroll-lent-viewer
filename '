@@ -156,8 +156,8 @@ class Lent:
 
     def update(self, movement: int):
         if self.is_animation:
-            if abs(self.scroll - self.end_scroll) / abs(self.speed) < 15:
-                if abs(self.speed) > 3:
+            if abs(self.scroll - self.end_scroll) / abs(self.speed) < 10:
+                if abs(self.speed) > 6:
                     self.speed = abs(abs(self.speed) * 0.8) * sign(self.speed)
 
             scroll = self.scroll + self.speed
