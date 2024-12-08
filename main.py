@@ -27,7 +27,7 @@ screen_offset_x = screen.get_width() // 2 - WIDTH // 2
 screen_offset_y = screen.get_height() // 2 - HEIGHT // 2
 
 clock = pygame.time.Clock()
-FPS = 80
+FPS = 60
 
 bottom_offset = 80
 panel_width = 250
@@ -77,7 +77,7 @@ class Label:
         center: bool = False,
         font_: pygame.font.Font = font,
     ):
-        self.image = font_.render(text, True, LIGHT_GREY)
+        self.image = font_.render(text, True, WHITE)
         if center:
             self.rect = self.image.get_rect(center=coords)
         else:
@@ -104,7 +104,8 @@ class Button:
 
         self.clicked = False
 
-    def update(self, finger_pos: tuple, click: bool):
+    def update(self, finger_pos: tuple, click: bool, scroll: tuple = 0):
+        self.rect = self.rect.move(0, -scroll)
         self.clicked = False
         if self.rect.collidepoint(finger_pos):
             current_image = self.image_pressed
@@ -121,6 +122,9 @@ class Button:
         self.rect.topleft = ((area_between_icons_x + icon_width)
                              * x + left_offset, y + top_offset)
 
+    def reset(self):
+        self.clicked = False
+
 
 class TextButton(Button):
     def __init__(
@@ -130,7 +134,7 @@ class TextButton(Button):
         center: bool = False,
         font_: pygame.font.Font = font,
     ):
-        image = font_.render(text, True, LIGHT_GREY)
+        image = font_.render(text, True, WHITE)
         image_pressed = font_.render(text, True, WHITE)
         super().__init__(image, image_pressed, coords, center)
 
@@ -140,6 +144,7 @@ class Lent:
         self.image = image
         self.image_width = self.image.get_width()
         self.image_height = self.image.get_height()
+        self.cropped = None
 
         self.scroll = 0
 
@@ -187,12 +192,12 @@ class Lent:
                     self.scroll = self.end_scroll_value
                     self.is_end = True
 
-        cropped = self.image.subsurface(
+        self.cropped = self.image.subsurface(
             (0, self.scroll, self.image_width, HEIGHT - bottom_offset)
         )
 
-        display.blit(cropped, (display.get_width() //
-                     2 - cropped.get_width() // 2, 0))
+        display.blit(self.cropped, (display.get_width() //
+                     2 - self.cropped.get_width() // 2, 0))
 
     def set_scroll(self, scroll_num: int):
         self.scroll = scroll_num
@@ -219,6 +224,11 @@ class Lent:
             self.end_scroll = end_scroll
             self.is_animation = True
 
+    def reset(self):
+        self.speed = 0
+        self.is_animation = False
+        self.scroll = 0
+
 
 class Panel:
     def __init__(self):
@@ -227,7 +237,7 @@ class Panel:
         self.surf.set_alpha(210)
         self.is_opened = False
 
-        dark_label = font.render("автопрокрутка", True, LIGHT_GREY)
+        dark_label = font.render("автопрокрутка", True, WHITE)
         light_label = font.render("автопрокрутка", True, WHITE)
         button_width, button_height = (
             dark_label.get_width() + 20,
@@ -243,8 +253,7 @@ class Panel:
             ),
         )
         pygame.draw.rect(
-            auto_scroll_image, LIGHT_GREY, (0, 0,
-                                            button_width, button_height), 4, 2
+            auto_scroll_image, WHITE, (0, 0, button_width, button_height), 4, 2
         )
         auto_scroll_image.set_colorkey((0, 0, 0))
 
@@ -268,8 +277,9 @@ class Panel:
                 panel_width // 2 - 1, 80), True
         )
 
-    def update(self, mouse_pos: tuple | list, click: bool):
+    def update(self, mouse_pos: tuple | list, click: bool, bg):
         if self.is_opened:
+            display.blit(bg, (0, 0))
             display.blit(self.surf, (0, 0))
             self.auto_scroll_button.update(mouse_pos, click)
 
@@ -281,6 +291,7 @@ class Panel:
 
     def close(self):
         self.is_opened = False
+        self.auto_scroll_button.reset()
 
 
 def create_lent_button_images(button_surf: pygame.Surface) -> tuple:
@@ -405,8 +416,6 @@ def lent_menu(lent: Lent):
     auto_scroll = 0
     auto_scroll_speed = 2
 
-    inertion_scroll = 0
-
     while True:
         display.fill(BLACK)
 
@@ -419,17 +428,17 @@ def lent_menu(lent: Lent):
                 sys.exit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                # finger_down_pos = (event.x, event.y)
+                # finger_down_pos = (event.x * WIDTH, event.y * HEIGHT)
                 finger_down_pos = event.pos
                 finger.down(finger_down_pos)
 
             if event.type == pygame.MOUSEBUTTONUP:
-                # finger_pos = (event.x, event.y)
+                # finger_pos = (event.x * WIDTH, event.y * HEIGHT)
                 finger_pos = event.pos
                 finger.up(finger_pos)
 
             if event.type == pygame.MOUSEMOTION:
-                # finger_motion = (event.dx, event.dy)
+                # finger_motion = (event.dx * WIDTH, event.dy * HEIGHT)
                 finger_motion = event.rel
         finger.motion(finger_motion)
 
@@ -445,25 +454,33 @@ def lent_menu(lent: Lent):
         finger.update(frame_rect)
         clicked = finger.is_clicked()
 
+        scroll = 0
         if finger.is_press_in_frame():
             scroll = -finger.get_scroll()
         scroll -= finger.get_inertion_scroll()
 
-        lent.update(scroll + auto_scroll + inertion_scroll)
+        lent.update(scroll + auto_scroll)
         button_open_panel.update(finger_pos, clicked)
-        panel.update(finger_pos, clicked)
+        panel_bg = lent.cropped.subsurface(
+            0, 0, panel_width, HEIGHT - bottom_offset)
+
+        panel.update(finger_pos, clicked, panel_bg)
         button_close_lent.update(finger_pos, clicked)
 
         if button_open_panel.triggered():
             panel.is_opened = not panel.is_opened
 
         if button_close_lent.triggered():
-            lent.scroll = 0
+            lent.reset()
+            panel.close()
+            finger.reset()
             break
 
         if panel.is_opened:
             if panel.auto_scroll_button.triggered():
                 auto_scroll = auto_scroll_speed - auto_scroll
+                panel.close()
+                # panel.auto_scroll_button.clicked = False
 
             for link_button, scroll_num in lent.links:
                 link_button.update(finger_pos, clicked)
@@ -494,34 +511,40 @@ def main_menu():
         )
         # screen.blit(module_net, (0, 0))
 
-        finger_pos = (-1, -1)
+        finger_pos = pygame.mouse.get_pos()
 
+        finger_motion = (0, 0)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                # finger_down_pos = (event.x, event.y)
+                # finger_down_pos = (event.x * WIDTH, event.y * HEIGHT)
                 finger_down_pos = event.pos
                 finger.down(finger_down_pos)
 
             if event.type == pygame.MOUSEBUTTONUP:
-                # finger_pos = (event.x, event.y)
+                # finger_pos = (event.x * WIDTH, event.y * HEIGHT)
                 finger_pos = event.pos
                 finger.up(finger_pos)
 
             if event.type == pygame.MOUSEMOTION:
-                # finger_motion = (event.dx, event.dy)
+                # finger_motion = (event.dx * WIDTH, event.dy * HEIGHT)
                 finger_motion = event.rel
-                finger.motion(finger_motion)
+        finger.motion(finger_motion)
 
         frame_rect = pygame.Rect(0, 0, WIDTH, HEIGHT)
         finger.update(frame_rect)
         clicked = finger.is_clicked()
 
+        scroll = 0
+        if finger.is_press_in_frame():
+            scroll = -finger.get_scroll()
+        scroll -= finger.get_inertion_scroll()
+
         for lent, button in buttons_and_lents:
-            button.update(finger_pos, clicked)
+            button.update(finger_pos, clicked, scroll)
             if button.triggered():
                 lent_menu(lent)
 
@@ -537,3 +560,4 @@ def main_menu():
 
 if __name__ == "__main__":
     main_menu()
+

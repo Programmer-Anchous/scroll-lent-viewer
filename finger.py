@@ -16,8 +16,10 @@ class Finger:
         self.drag_threshold_dist = 8
 
         self.last_motion = 0
+        self.motion_history = []
         self.is_inertion = False
-        self.motion_coeff = 1.5
+        self.inertion = 0
+        self.motion_coeff = 1.4
 
         self.fps = fps
         self.delay = int(self.fps * 0.6)
@@ -29,11 +31,11 @@ class Finger:
 
     def update(self, frame=None):
         self.frame = frame
-        if self.is_inertion:
-            self.last_motion = sign(self.last_motion) * \
-                (abs(self.last_motion) - 1.3)
-            if abs(self.last_motion) < 1.5:
-                self.last_motion = 0
+        if self.is_inertion or self.inertion:
+            self.inertion = sign(self.inertion) * \
+                (abs(self.inertion) - 1.0)
+            if abs(self.inertion) < 1.2:
+                self.inertion = 0
                 self.is_inertion = False
 
         self.clicked = False
@@ -60,6 +62,7 @@ class Finger:
             if self.is_drag:
                 if self.is_press_in_frame():
                     self.is_inertion = True
+                    self.inertion = max(self.motion_history, key=abs) * 1.5
             self.is_drag = False
 
         self.dx = 0
@@ -89,6 +92,7 @@ class Finger:
     def down(self, finger_down_pos):
         self.finger_down_pos = finger_down_pos
         self.finger_down = True
+        self.last_motion = 0
 
     def up(self, finger_up_pos):
         self.finger_up_pos = finger_up_pos
@@ -96,8 +100,12 @@ class Finger:
 
     def motion(self, motion):
         self.dx, self.dy = motion
+        self.motion_history.append(self.dy)
+        if len(self.motion_history) > 5:
+            del self.motion_history[:-5]
         if not self.is_inertion:
-            self.last_motion = self.dy
+            self.inertion = self.dy
+        self.last_motion = self.dy
 
     def get_scroll(self):
         if self.is_drag:
@@ -106,5 +114,13 @@ class Finger:
 
     def get_inertion_scroll(self):
         if self.is_inertion:
-            return self.last_motion * self.motion_coeff
+            return self.inertion * self.motion_coeff
         return 0
+
+    def reset(self):
+        self.is_inertion = False
+        self.inertion = 0
+        self.last_motion = 0
+        self.clicked = False
+        self.is_drag = False
+
