@@ -101,11 +101,18 @@ class Button:
             self.rect = self.image.get_rect(center=coords)
         else:
             self.rect = self.image.get_rect(topleft=coords)
+        self.coords = self.rect.topleft
 
         self.clicked = False
 
     def update(self, finger_pos: tuple, click: bool, scroll: tuple = 0):
         self.rect = self.rect.move(0, -scroll)
+
+        if self.rect.y > self.coords[1]:
+            self.rect.y = self.coords[1]
+        elif self.rect.y < self.coords[1] - 265:
+            self.rect.y = self.coords[1] - 265
+
         self.clicked = False
         if self.rect.collidepoint(finger_pos):
             current_image = self.image_pressed
@@ -119,8 +126,8 @@ class Button:
         return self.clicked
 
     def set_pos(self, x, y):
-        self.rect.topleft = ((area_between_icons_x + icon_width)
-                             * x + left_offset, y + top_offset)
+        self.rect.topleft = (x, y)
+        self.coords = self.rect.topleft
 
     def reset(self):
         self.clicked = False
@@ -314,13 +321,11 @@ for i in range(len(directories)):
         *create_lent_button_images(logo_image),
         ((area_between_icons_x + icon_width) * i + left_offset, top_offset),
     )
-    buttons_and_lents.append((lent, button))
 
-# some settings
-buttons_and_lents[1][1].set_pos(
-    0, buttons_and_lents[0][1].rect.height + area_between_icons_y)
-buttons_and_lents[2][1].set_pos(2, 0)
-buttons_and_lents[3][1].set_pos(4, 0)
+    with open(f'data/lents/lent_{i + 1}/pos.txt', 'r') as file:
+        button.set_pos(*map(int, file.read().split(',')))
+
+    buttons_and_lents.append((lent, button))
 
 buttons_and_lents[1][0].add_links(
     ("Начало", 0), ("Заводы", 7217), ("Инвестиции", 11689))
@@ -546,6 +551,7 @@ def main_menu():
         for lent, button in buttons_and_lents:
             button.update(finger_pos, clicked, scroll)
             if button.triggered():
+                finger.reset()
                 lent_menu(lent)
 
         button_exit.update(finger_pos, clicked)
@@ -560,4 +566,3 @@ def main_menu():
 
 if __name__ == "__main__":
     main_menu()
-
