@@ -110,8 +110,8 @@ class Button:
 
         if self.rect.y > self.coords[1]:
             self.rect.y = self.coords[1]
-        elif self.rect.y < self.coords[1] - 265:
-            self.rect.y = self.coords[1] - 265
+        elif self.rect.y < self.coords[1] - sliding_size:
+            self.rect.y = self.coords[1] - sliding_size
 
         self.clicked = False
         if self.rect.collidepoint(finger_pos):
@@ -326,6 +326,8 @@ for i in range(len(directories)):
         button.set_pos(*map(int, file.read().split(',')))
 
     buttons_and_lents.append((lent, button))
+
+sliding_size = max([button.rect.bottom for _, button in buttons_and_lents]) - 1080 + top_offset
 
 buttons_and_lents[1][0].add_links(
     ("Начало", 0), ("Заводы", 7217), ("Инвестиции", 11689))

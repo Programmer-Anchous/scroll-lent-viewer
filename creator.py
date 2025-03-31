@@ -77,10 +77,11 @@ magnets_y = [
 ]
 
 
-def save_positions(buttons):
+def save_positions(buttons, offset):
     for i in range(len(directories)):
         with open(f'data/lents/lent_{i + 1}/pos.txt', 'w') as file:
-            file.write('{},{}'.format(*buttons[i][1].topleft))
+            x, y = buttons[i][1].topleft
+            file.write('{},{}'.format(x, y - offset))
 
 
 def main_menu():
@@ -88,6 +89,8 @@ def main_menu():
     drag_idx = None
     drag_start = None
     drag_rect = None
+
+    offset = 0
     while True:
         display.fill((0, 0, 0))
 
@@ -97,10 +100,15 @@ def main_menu():
         mx, my = mouse_pos = pygame.mouse.get_pos()
 
         clicked = False
+        offset_dx = 0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            
+            if event.type == pygame.MOUSEWHEEL:
+                offset_dx = event.y * 65
+                offset += offset_dx
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
@@ -118,9 +126,10 @@ def main_menu():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
-                    save_positions(buttons)
+                    save_positions(buttons, offset)
 
         for i, (image, rect) in enumerate(buttons):
+            rect.move_ip(0, offset_dx)
             if drag_idx == i:
                 rect = rect.move(mx - drag_start[0], my - drag_start[1])
                 for x in magnets_x:
