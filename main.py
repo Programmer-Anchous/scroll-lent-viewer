@@ -160,7 +160,7 @@ class Lent:
 
         self.end_scroll_value = self.image_height - HEIGHT + bottom_offset
 
-        self.links = list()
+        self.links = []
 
         self.is_animation = False
         self.speed = 0
@@ -205,6 +205,94 @@ class Lent:
 
         display.blit(self.cropped, (display.get_width() //
                      2 - self.cropped.get_width() // 2, 0))
+
+    def set_scroll(self, scroll_num: int):
+        self.scroll = scroll_num
+        if self.scroll <= 0:
+            self.scroll = 0
+            self.is_start = True
+            self.is_end = False
+        elif self.scroll >= self.end_scroll_value:
+            self.scroll = self.end_scroll_value
+            self.is_start = False
+            self.is_end = True
+        else:
+            self.is_start = False
+            self.is_end = False
+
+    def add_links(self, *links):
+        for i, link in enumerate(links):
+            button = TextButton(link[0], (30, i * 60 + 160))
+            self.links.append((button, link[1]))
+
+    def animation(self, end_scroll):
+        if end_scroll != self.scroll:
+            self.speed = (end_scroll - self.scroll) / 30
+            self.end_scroll = end_scroll
+            self.is_animation = True
+
+    def reset(self):
+        self.speed = 0
+        self.is_animation = False
+        self.scroll = 0
+
+
+class Chronicle:
+    def __init__(self, blocks):
+        self.blocks = blocks
+
+        self.scroll = 0
+
+        self.is_start = True
+        self.is_end = False
+
+        self.image_height = blocks[-1]["rect"].bottom
+
+        self.end_scroll_value = self.image_height - HEIGHT + bottom_offset * 2
+
+        self.links = []
+        self.cropped = pygame.Surface(W_SIZE)
+
+        self.is_animation = False
+        self.speed = 0
+        self.end_scroll = None
+
+    def update(self, movement: int):
+        if self.is_animation:
+            if abs(self.scroll - self.end_scroll) / abs(self.speed) < 15:
+                if abs(self.speed) > 3:
+                    self.speed = abs(abs(self.speed) * 0.8) * sign(self.speed)
+
+            scroll = self.scroll + self.speed
+            self.set_scroll(scroll)
+
+            if abs(self.scroll - self.end_scroll) <= abs(self.speed):
+                self.scroll = self.end_scroll
+
+                self.is_animation = False
+                self.speed = 0
+                self.end_scroll = None
+        else:
+            if self.is_start:
+                if movement > 0:
+                    self.is_start = False
+
+            elif self.is_end:
+                if movement < 0:
+                    self.is_end = False
+
+            if not (self.is_start or self.is_end):
+                self.scroll += movement
+                if self.scroll < 0:
+                    self.scroll = 0
+                    self.is_start = True
+                elif self.scroll > self.end_scroll_value:
+                    self.scroll = self.end_scroll_value
+                    self.is_end = True
+
+        for block in self.blocks:
+            display.blit(block["image"], block["rect"].move(0, -self.scroll))
+        
 
     def set_scroll(self, scroll_num: int):
         self.scroll = scroll_num
@@ -306,7 +394,7 @@ def create_lent_button_images(button_surf: pygame.Surface) -> tuple:
     return button_surf, button_surf_pressed
 
 
-buttons_and_lents = list()
+buttons_and_lents = []
 directories = [path for path in Path("data/lents").iterdir() if path.is_dir()]
 for i in range(len(directories)):
     try:
@@ -327,13 +415,38 @@ for i in range(len(directories)):
 
     buttons_and_lents.append((lent, button))
 
-sliding_size = max([button.rect.bottom for _, button in buttons_and_lents]) - 1080 + top_offset
-
 buttons_and_lents[1][0].add_links(
     ("Начало", 0), ("Заводы", 7217), ("Инвестиции", 11689))
 buttons_and_lents[0][0].add_links(
     ("Данные", 2610), ("История", 3838), ("Особенности", 8215))
 
+chronicle_blocks = []
+blocks_paths = [str(path) for path in Path("data/chronicle/blocks").iterdir()]
+for path in blocks_paths:
+    image = load_image(path, (255, 255, 255))
+    rect = pygame.Rect(0, top_offset, image.get_width(), image.get_height())
+    rect.centerx = WIDTH // 2
+    if chronicle_blocks:
+        rect.y = chronicle_blocks[-1]["rect"].bottom + area_between_icons_y
+    chronicle_blocks.append({
+        "image": image,
+        "rect": rect
+    })
+
+logo_image = load_alpha_image(f"data/chronicle/logo.png")
+
+button = Button(
+    *create_lent_button_images(logo_image),
+    (0, 0),
+)
+
+with open(f'data/chronicle/pos.txt', 'r') as file:
+    button.set_pos(*map(int, file.read().split(',')))
+
+buttons_and_lents.append((Chronicle(chronicle_blocks), button))
+
+sliding_size = max([button.rect.bottom for _, button in buttons_and_lents]) - 1080 + top_offset
+sliding_size = max(sliding_size, 0)
 
 button_exit = TextButton(" ", (WIDTH - 28, 10))
 

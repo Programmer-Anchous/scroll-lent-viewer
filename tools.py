@@ -1,8 +1,11 @@
 from pygame import image
 
 
-def load_image(file_path):
-    return image.load(file_path).convert()
+def load_image(file_path, colorkey=None):
+    res = image.load(file_path).convert()
+    if colorkey:
+        res.set_colorkey(colorkey)
+    return res
 
 
 def load_alpha_image(file_path):
