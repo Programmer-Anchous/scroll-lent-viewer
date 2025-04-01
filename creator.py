@@ -49,9 +49,9 @@ area_between_icons_y = 32
 left_offset = 191
 top_offset = 95
 
-buttons = []
-directories = [path for path in Path("data/lents").iterdir() if path.is_dir()]
-for i in range(len(directories)):
+buttons_and_dirs = []
+directories = [str(path) for path in Path("data/lents").glob("**/lent.png")]
+for i, path in enumerate(directories):
     try:
         lent_image = load_image(f"data/lents/lent_{i + 1}/lent.png")
         logo_image = load_alpha_image(f"data/lents/lent_{i + 1}/logo.png")
@@ -61,8 +61,15 @@ for i in range(len(directories)):
 
     with open(f'data/lents/lent_{i + 1}/pos.txt', 'r') as file:
         x, y = map(int, file.read().split(','))
+    
+    pos_path = path[:-8] + 'pos.txt'
+    buttons_and_dirs.append([logo_image, pygame.Rect(x, y, *logo_image.get_size()), pos_path])
 
-    buttons.append([logo_image, pygame.Rect(x, y, *logo_image.get_size())])
+logo_image = load_alpha_image("data/chronicle/logo.png")
+pos_path = 'data/chronicle/pos.txt'
+with open(pos_path, 'r') as file:
+    x, y = map(int, file.read().split(','))
+buttons_and_dirs.append([logo_image, pygame.Rect(x, y, *logo_image.get_size()), pos_path])
 
 
 magnets_x = [
@@ -77,10 +84,10 @@ magnets_y = [
 ]
 
 
-def save_positions(buttons, offset):
-    for i in range(len(directories)):
-        with open(f'data/lents/lent_{i + 1}/pos.txt', 'w') as file:
-            x, y = buttons[i][1].topleft
+def save_positions(buttons_and_dirs, offset):
+    for i in range(len(buttons_and_dirs)):
+        with open(buttons_and_dirs[i][2], 'w') as file:
+            x, y = buttons_and_dirs[i][1].topleft
             file.write('{},{}'.format(x, y - offset))
 
 
@@ -118,7 +125,7 @@ def main_menu():
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     if drag_idx is not None:
-                        buttons[drag_idx][1] = drag_rect
+                        buttons_and_dirs[drag_idx][1] = drag_rect
 
                     drag = False
                     drag_idx = None
@@ -126,9 +133,9 @@ def main_menu():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
-                    save_positions(buttons, offset)
+                    save_positions(buttons_and_dirs, offset)
 
-        for i, (image, rect) in enumerate(buttons):
+        for i, (image, rect, _) in enumerate(buttons_and_dirs):
             rect.move_ip(0, offset_dx)
             if drag_idx == i:
                 rect = rect.move(mx - drag_start[0], my - drag_start[1])
@@ -138,10 +145,10 @@ def main_menu():
                 for y in magnets_y:
                     if abs(y - rect.y) < 15:
                         rect.y = y
-                for k in range(len(buttons)):
+                for k in range(len(buttons_and_dirs)):
                     if k == i:
                         continue
-                    another = buttons[k][1]
+                    another = buttons_and_dirs[k][1]
                     if another.left < rect.right and another.right > rect.left:
                         if abs(rect.top - another.bottom - area_between_icons_y) < 15:
                             rect.top = another.bottom + area_between_icons_y
@@ -157,7 +164,7 @@ def main_menu():
                     drag_rect = rect.copy()
 
         if drag_idx is not None:
-            display.blit(buttons[drag_idx][0], drag_rect)
+            display.blit(buttons_and_dirs[drag_idx][0], drag_rect)
 
         screen.blit(display, (screen_offset_x, screen_offset_y))
         pygame.display.update()
